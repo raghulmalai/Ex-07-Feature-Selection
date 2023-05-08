@@ -1,112 +1,33 @@
-## Ex-07-Feature-Selection
+# Ex-07-Feature-Selection
 ## AIM
-To Perform the various feature selection techniques on a dataset and save the data to a file.
+To Perform the various feature selection techniques on a dataset and save the data to a file. 
 
-## Explanation
-Feature selection is to find the best set of features that allows one to build useful models. Selecting the best features helps the model to perform well.
+# Explanation
+Feature selection is to find the best set of features that allows one to build useful models.
+Selecting the best features helps the model to perform well. 
 
-## ALGORITHM
-## STEP 1
+# ALGORITHM
+### STEP 1
 Read the given Data
-
-## STEP 2
+### STEP 2
 Clean the Data Set using Data Cleaning Process
-
-## STEP 3
+### STEP 3
 Apply Feature selection techniques to all the features of the data set
-
-## STEP 4
+### STEP 4
 Save the data to the file
 
-## CODE-Done for "titanic_dataset.csv"
 
+# CODE
 ```
-Developed By: Ashika Jubi R
-Reg.No: 212221040020
-
-## loading dataset
+Developed by:Adhithya Perumal.D
+Registor No :212222230007
+```
+```
+from sklearn.datasets import load_boston
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-df=pd.read_csv("titanic_dataset.csv")
-df
-
-## checking data
-df.isnull().sum()
-
-
-## removing unnecessary data variables
-df.drop('Cabin',axis=1,inplace=True)
-df.drop('Name',axis=1,inplace=True)
-df.drop('Ticket',axis=1,inplace=True)
-df.drop('PassengerId',axis=1,inplace=True)
-df.drop('Parch',axis=1,inplace=True)
-#cleaning data
-df['Age']=df['Age'].fillna(df['Age'].median())
-df['Embarked']=df['Embarked'].fillna(df['Embarked'].mode()[0])
-df.isnull().sum()
-
-
-
-## removing outliers 
-plt.title("Dataset with outliers")
-df.boxplot()
-plt.show()
-
-cols = ['Age','SibSp','Fare']
-Q1 = df[cols].quantile(0.25)
-Q3 = df[cols].quantile(0.75)
-IQR = Q3 - Q1
-df = df[~((df[cols] < (Q1 - 1.5 * IQR)) |(df[cols] > (Q3 + 1.5 * IQR))).any(axis=1)]
-plt.title("Dataset after removing outliers")
-df.boxplot()
-plt.show()
-
-
-## feature encoding 
-from sklearn.preprocessing import OrdinalEncoder
-embark=["C","S","Q"]
-emb=OrdinalEncoder(categories=[embark])
-df["Embarked"]=emb.fit_transform(df[["Embarked"]])
-
-from category_encoders import BinaryEncoder
-be=BinaryEncoder()
-df["Sex"]=be.fit_transform(df[["Sex"]])
-df
-
-
-## feature scaling
-from sklearn.preprocessing import RobustScaler
-sc=RobustScaler()
-df2=pd.DataFrame(sc.fit_transform(df),columns=['Survived','Pclass','Sex','Age','SibSp','Fare','Embarked'])
-df2
-
-
-## feature transformation
-df2.skew()
-
-import statsmodels.api as sm
-import numpy as np
-import scipy.stats as stats
-from sklearn.preprocessing import QuantileTransformer 
-qt=QuantileTransformer(output_distribution='normal',n_quantiles=692)
-#no skew data that need no transformation- Age, Embarked
-#moderately positive skew- Survived, Sex
-#highy positive skew- Fare, SibSp
-#highy negative skew- Pclass
-df1=pd.DataFrame()
-df1["Survived"]=np.sqrt(df2["Survived"])
-df1["Pclass"],parameters=stats.yeojohnson(df2["Pclass"])
-df1["Sex"]=np.sqrt(df2["Sex"])
-df1["Age"]=df2["Age"]
-df1["SibSp"],parameters=stats.yeojohnson(df2["SibSp"])
-df1["Fare"],parameters=stats.yeojohnson(df2["Fare"])
-df1["Embarked"]=df2["Embarked"]
-df1.skew()
-
-
-## feature selection process
 import matplotlib
+import matplotlib.pyplot as plt
 import seaborn as sns
 import statsmodels.api as sm
 %matplotlib inline
@@ -115,160 +36,221 @@ from sklearn.linear_model import LinearRegression
 from sklearn.feature_selection import RFE
 from sklearn.linear_model import RidgeCV, LassoCV, Ridge, Lasso
 
-X = df1.drop("Survived",1) 
-y = df1["Survived"]          
+from sklearn.datasets import load_boston
+boston = load_boston()
 
-plt.figure(figsize=(12,10))
-cor = df1.corr()
-sns.heatmap(cor, annot=True, cmap=plt.cm.RdPu)
+print(boston['DESCR'])
+
+import pandas as pd
+df = pd.DataFrame(boston['data'] )
+df.head()
+
+df.columns = boston['feature_names']
+df.head()
+
+df['PRICE']= boston['target']
+df.head()
+
+df.info()
+
+plt.figure(figsize=(10, 8))
+sns.distplot(df['PRICE'], rug=True)
 plt.show()
 
-cor_target = abs(cor["Survived"])
-relevant_features = cor_target[cor_target>0.5]
-relevant_features
+#FILTER METHODS
+X=df.drop("PRICE",1)
+y=df["PRICE"]
 
-X_1 = sm.add_constant(X)
-model = sm.OLS(y,X_1).fit()
-model.pvalues
+from sklearn.feature_selection import SelectKBest, chi2
+X, y = load_boston(return_X_y=True)
+X.shape
 
+#1.VARIANCE THRESHOLD
+from sklearn.feature_selection import VarianceThreshold
+selector = VarianceThreshold()
+selector.fit_transform(X)
 
-#Backward Elimination
-cols = list(X.columns)
-pmax = 1
-while (len(cols)>0):
-    p= []
-    X_1 = X[cols]
-    X_1 = sm.add_constant(X_1)
-    model = sm.OLS(y,X_1).fit()
-    p = pd.Series(model.pvalues.values[1:],index = cols)      
-    pmax = max(p)
-    feature_with_p_max = p.idxmax()
-    if(pmax>0.05):
-        cols.remove(feature_with_p_max)
-    else:
-        break
-selected_features_BE = cols
-print(selected_features_BE)
+#2.INFORMATION GAIN/MUTUAL INFORMATION
+from sklearn.feature_selection import mutual_info_regression
+mi = mutual_info_regression(X, y);
+mi = pd.Series(mi)
+mi.sort_values(ascending=False)
+mi.sort_values(ascending=False).plot.bar(figsize=(10, 4))
 
-model = LinearRegression()
-#Initializing RFE model
-rfe = RFE(model, 4)
-#Transforming data using RFE
-X_rfe = rfe.fit_transform(X,y)  
-#Fitting the data to model
-model.fit(X_rfe,y)
-print(rfe.support_)
-print(rfe.ranking_)
+#3.SELECTKBEST METHOD
+from sklearn.feature_selection import f_classif
+from sklearn.feature_selection import SelectKBest,SelectPercentile
+skb = SelectKBest(score_func=f_classif, k=2) 
+X_data_new = skb.fit_transform(X, y)
+print('Number of features before feature selection: {}'.format(X.shape[1]))
+print('Number of features after feature selection: {}'.format(X_data_new.shape[1]))
 
-nof_list=np.arange(1,6)            
-high_score=0
-nof=0           
-score_list =[]
-for n in range(len(nof_list)):
-    X_train, X_test, y_train, y_test = train_test_split(X,y, test_size = 0.3, random_state = 0)
-    model = LinearRegression()
-    rfe = RFE(model,nof_list[n])
-    X_train_rfe = rfe.fit_transform(X_train,y_train)
-    X_test_rfe = rfe.transform(X_test)
-    model.fit(X_train_rfe,y_train)
-    score = model.score(X_test_rfe,y_test)
-    score_list.append(score)
-    if(score>high_score):
-        high_score = score
-        nof = nof_list[n]
-print("Optimum number of features: %d" %nof)
-print("Score with %d features: %f" % (nof, high_score))
+#4.CORRELATION COEFFICIENT
+cor=df.corr()
+sns.heatmap(cor,annot=True)
 
-cols = list(X.columns)
-model = LinearRegression()
-rfe = RFE(model, 2)             
-X_rfe = rfe.fit_transform(X,y)  
-model.fit(X_rfe,y)              
-temp = pd.Series(rfe.support_,index = cols)
-selected_features_rfe = temp[temp==True].index
-print(selected_features_rfe)
+#5.MEAN ABSOLUTE DIFFERENCE
+mad=np.sum(np.abs(X-np.mean(X,axis=0)),axis=0)/X.shape[0]
+plt.bar(np.arange(X.shape[1]),mad,color='teal')
 
+#Processing data into array type.
+from sklearn import preprocessing
+lab = preprocessing.LabelEncoder()
+y_transformed = lab.fit_transform(y)
+print(y_transformed)
 
+#6.CHI SQUARE TEST
+X = X.astype(int)
+chi2_selector = SelectKBest(chi2, k=2)
+X_kbest = chi2_selector.fit_transform(X, y_transformed)
+print('Original number of features:', X.shape[1])
+print('Reduced number of features:', X_kbest.shape[1])
 
-## Embedded Method
-reg = LassoCV()
-reg.fit(X, y)
-print("Best alpha using built-in LassoCV: %f" % reg.alpha_)
-print("Best score using built-in LassoCV: %f" %reg.score(X,y))
-coef = pd.Series(reg.coef_, index = X.columns)
-print("Lasso picked " + str(sum(coef != 0)) + " variables and eliminated the other " +  str(sum(coef == 0)) + " variables")
-imp_coef = coef.sort_values()
-import matplotlib
-matplotlib.rcParams['figure.figsize'] = (8.0, 10.0)
-imp_coef.plot(kind = "barh")
-plt.title("Feature importance using Lasso Model")
-plt.show()
+#7.SELECT PERCENTILE METHOD
+X_new = SelectPercentile(chi2, percentile=10).fit_transform(X, y_transformed)
+X_new.shape
 
+#WRAPPER METHOD
+#1.FORWARD FEATURE SELECTION
+
+from mlxtend.feature_selection import SequentialFeatureSelector as SFS
+from sklearn.linear_model import LinearRegression
+sfs = SFS(LinearRegression(),
+          k_features=10,
+          forward=True,
+          floating=False,
+          scoring = 'r2',
+          cv = 0)
+sfs.fit(X, y)
+sfs.k_feature_names_
+
+#2.BACKWARD FEATURE ELIMINATION
+
+sbs = SFS(LinearRegression(),
+         k_features=10,
+         forward=False,
+         floating=False,
+         cv=0)
+sbs.fit(X, y)
+sbs.k_feature_names_
+
+#3.BI-DIRECTIONAL ELIMINATION
+
+sffs = SFS(LinearRegression(),
+         k_features=(3,7),
+         forward=True,
+         floating=True,
+         cv=0)
+sffs.fit(X, y)
+sffs.k_feature_names_
+
+#4.RECURSIVE FEATURE SELECTION
+from sklearn.feature_selection import RFE
+lr=LinearRegression()
+rfe=RFE(lr,n_features_to_select=7)
+rfe.fit(X, y)
+print(X.shape, y.shape)
+rfe.transform(X)
+rfe.get_params(deep=True)
+rfe.support_
+rfe.ranking_
+
+#EMBEDDED METHOD
+
+#1.RANDOM FOREST IMPORTANCE
+from sklearn.ensemble import RandomForestClassifier
+model = RandomForestClassifier().fit(X,y_transformed)
+importances=model.feature_importances_
+
+final_df=pd.DataFrame({"Features":pd.DataFrame(X).columns,"Importances":importances})
+final_df.set_index("Importances")
+final_df=final_df.sort_values("Importances")
+final_df.plot.bar(color="teal")
 ```
-## OUTPUT
-## Data Preprocessing before Feature Selection:
+## OUTPUT:
 
+![1](https://user-images.githubusercontent.com/118707079/234245250-16638c13-3c9f-4d64-9d5e-c555649a258f.png)
 
-## Initial Dataset:
+## Analyzing the boston dataset:
 
-![GITHUB](o1.png)
+![2](https://user-images.githubusercontent.com/118707079/234245460-3e362d40-ddbd-4057-871a-7111998784f7.png)
 
-## Data checking and cleaning:
+![3](https://user-images.githubusercontent.com/118707079/234245680-a57e8f1c-f06a-404a-aa91-a94f4f607138.png)
 
+![4](https://user-images.githubusercontent.com/118707079/234245806-30af5d8e-3e4b-4ce2-96c7-df7c88d2f02f.png)
 
-![GITHUB](o2.png)
+## Analyzing dataset using Distplot:
 
-![GITHUB](o3.png)
+![5 1](https://user-images.githubusercontent.com/118707079/234246634-aa912e56-890c-47ed-b530-ba31d73eac17.png)
+![5 2](https://user-images.githubusercontent.com/118707079/234246633-e071212d-530e-4bd7-ad8e-fe1a623dc275.png)
 
-## Outlier Removal:
+## Filter Methods:
+Variance Threshold:
 
-![GITHUB](o4.png)
+![6](https://user-images.githubusercontent.com/118707079/234246827-e194e7cd-b431-4e6f-b901-4d6d210c0f2a.png)
 
-![GITHUB](o5.png)
-## Feature Enoding:
+## Information Gain:
 
-![GITHUB](o6.png)
+![7](https://user-images.githubusercontent.com/118707079/234247277-aa1603d4-7cc1-4de1-88e3-8cdc87bbfedc.png)
 
-## Feature Scaling:
+## SelectKBest Model:
 
+![8](https://user-images.githubusercontent.com/118707079/234247499-adb36414-dc08-4960-86b9-c827a0b70971.png)
 
-![GITHUB](o7.png)
-## Feature Transformations:
+## Correlation Coefficient:
 
-![GITHUB](o8.png)
+![9](https://user-images.githubusercontent.com/118707079/234247618-fe85c7e0-1726-4746-8417-56069c43da5c.png)
 
-![GITHUB](o9.png)
-## Feature Selection
-![GITHUB](o10.png)
-## Filter Method
-The filtering here is done using correlation matrix and it is most commonly done using Pearson correlation. 
+## Mean Absolute difference:
 
-Highly correlated features with the Output variable Survived:
-![GITHUB](o11.png)
+![10](https://user-images.githubusercontent.com/118707079/234247897-b32f9bd3-d1db-4e49-83e1-75e30a7af287.png)
 
+## Chi Square Test:
 
-## Wrapper Method:
-Wrapper Method is an iterative and computationally expensive process but it is more accurate than the filter method.
+![11](https://user-images.githubusercontent.com/118707079/234248021-923c053c-561b-4767-a77f-c6edb008cae2.png)
+![12](https://user-images.githubusercontent.com/118707079/234248255-7f1e81a4-c4ac-435c-8b15-6264918ecbce.png)
 
-There are different wrapper methods such as Backward Elimination, Forward Selection, Bidirectional Elimination and RFE.
-![GITHUB](o12.png)
-## Backward Elimination:
-![GITHUB](o13.png)
+## SelectPercentile Method:
 
+![13](https://user-images.githubusercontent.com/118707079/234248408-a32511e0-e807-4b4e-a062-65de74162c66.png)
 
+## Wrapper Methods:
+Forward Feature Selection:
 
-## RFE (Recursive Feature Elimination):
-![GITHUB](o14.png)
+![14](https://user-images.githubusercontent.com/118707079/234249756-9d1ad92d-a34e-487d-9345-47f6498139b9.png)
 
-## Optimum number of features that have high accuracy:
-![GITHUB](o15.png)
+Backward Feature Selection:
 
-## Final set of feature:
+![15](https://user-images.githubusercontent.com/118707079/234249890-32f4a579-e6a8-484c-a57b-47bba97eb891.png)
 
-![GITHUB](o16.png)
-## Embedded Method:
-Embedded methods are iterative in a sense that takes care of each iteration of the model training process and carefully extract those features which contribute the most to the training for a particular iteration. Regularization methods are the most commonly used embedded methods which penalize a feature given a coefficient threshold. 
-![GITHUB](o17.png)
+## Bi-Directional Elimination:
+
+![16](https://user-images.githubusercontent.com/118707079/234250023-3f831d59-d840-4942-a673-1aceee5227cf.png)
+
+## Recursive Feature Selection:
+
+![17](https://user-images.githubusercontent.com/118707079/234250134-628cc4ab-bcd2-45ae-b204-7581fbcfbdc6.png)
+
+## Embedded Methods:
+Random Forest Importance:
+
+![18](https://user-images.githubusercontent.com/118707079/234250409-0b18ba51-d309-4740-b241-db907efd72c2.png)
 
 ## RESULT:
-Thus, the various feature selection techniques have been performed on a given dataset successfully.
+
+Hence various feature selection techniques are applied to the given data set successfully and saved the data into a file.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

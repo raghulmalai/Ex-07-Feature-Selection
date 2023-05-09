@@ -1,256 +1,119 @@
-# Ex-07-Feature-Selection
+## Ex-07-Feature-Selection
 ## AIM
-To Perform the various feature selection techniques on a dataset and save the data to a file. 
+To Perform the various feature selection techniques on a dataset and save the data to a file.
 
-# Explanation
-Feature selection is to find the best set of features that allows one to build useful models.
-Selecting the best features helps the model to perform well. 
+## Explanation
+Feature selection is to find the best set of features that allows one to build useful models. Selecting the best features helps the model to perform well.
 
-# ALGORITHM
-### STEP 1
+## ALGORITHM
+## STEP 1
 Read the given Data
-### STEP 2
+
+## STEP 2
 Clean the Data Set using Data Cleaning Process
-### STEP 3
+
+## STEP 3
 Apply Feature selection techniques to all the features of the data set
-### STEP 4
+
+## STEP 4
 Save the data to the file
 
+## CODE-Done for "titanic_dataset.csv"
+```
 
-# CODE
-```
-Developed by:Adhithya Perumal.D
-Registor No :212222230007
-```
-```
-from sklearn.datasets import load_boston
+Developed By: Ashika Jubi R
+Reg.No: 212221040020
+
+# PROGRAM FOR TITANIC
+
+
 import pandas as pd
 import numpy as np
-import matplotlib
-import matplotlib.pyplot as plt
-import seaborn as sns
-import statsmodels.api as sm
-%matplotlib inline
-from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LinearRegression
-from sklearn.feature_selection import RFE
-from sklearn.linear_model import RidgeCV, LassoCV, Ridge, Lasso
+df = pd.read_csv("titanic_dataset.csv")
+df
+df.isnull().sum()
+from sklearn.preprocessing import LabelEncoder
+from sklearn.impute import SimpleImputer
+from sklearn.feature_selection import SelectKBest
+from sklearn.feature_selection import chi2
+df.drop(['PassengerId', 'Name', 'Ticket', 'Cabin'], axis=1, inplace=True)
+le = LabelEncoder()
+df['Sex'] = le.fit_transform(df['Sex'])
+df['Embarked'] = le.fit_transform(df['Embarked'].astype(str))
+imputer = SimpleImputer(missing_values=np.nan, strategy='median')
+df[['Age']] = imputer.fit_transform(df[['Age']])
+print("Feature selection")
+X = df.iloc[:, :-1]
+y = df.iloc[:, -1]
+selector = SelectKBest(chi2, k=3)
+X_new = selector.fit_transform(X, y)
+print(X_new)
+df_new = pd.DataFrame(X_new, columns=['Pclass', 'Age', 'Fare'])
+df_new['Survived'] = y.values
+df_new.to_csv('titanic_transformed.csv', index=False)
+print(df_new)
+```
+## OUTPUT
 
-from sklearn.datasets import load_boston
-boston = load_boston()
+# OUTPUT FOR TITANIC
 
-print(boston['DESCR'])
+![GITHUB](d7.1.PNG)
+
+![GITHUB](d7.2.PNG)
+![GITHUB](d7.3.PNG)
+![GITHUB](d7.4.PNG)
+
+
+# PROGRAM FOR CARPRICE
+
+```
 
 import pandas as pd
-df = pd.DataFrame(boston['data'] )
-df.head()
+import numpy as np
+import matplotlib.pyplot as plt
+df = pd.read_csv("CarPrice.csv")
+df
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from sklearn.feature_selection import SelectKBest, f_regression
+from sklearn.ensemble import ExtraTreesRegressor
+df = df.drop(['car_ID', 'CarName'], axis=1)
+le = LabelEncoder()
+df['fueltype'] = le.fit_transform(df['fueltype'])
+df['aspiration'] = le.fit_transform(df['aspiration'])
+df['doornumber'] = le.fit_transform(df['doornumber'])
+df['carbody'] = le.fit_transform(df['carbody'])
+df['drivewheel'] = le.fit_transform(df['drivewheel'])
+df['enginelocation'] = le.fit_transform(df['enginelocation'])
+df['enginetype'] = le.fit_transform(df['enginetype'])
+df['cylindernumber'] = le.fit_transform(df['cylindernumber'])
+df['fuelsystem'] = le.fit_transform(df['fuelsystem'])
+X = df.iloc[:, :-1]
+y = df.iloc[:, -1]
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2,
+random_state=1)
+print("Univariate Selection")
+selector = SelectKBest(score_func=f_regression, k=10)
+X_train_new = selector.fit_transform(X_train, y_train)
+mask = selector.get_support()
+selected_features = X_train.columns[mask]
+model = ExtraTreesRegressor()
+model.fit(X_train, y_train)
+importance = model.feature_importances_
+indices = np.argsort(importance)[::-1]
+selected_features = X_train.columns[indices][:10]
+df_new = pd.concat([X_train[selected_features], y_train], axis=1)
+df_new.to_csv('CarPrice_new.csv', index=False)
+print(df_new)
 
-df.columns = boston['feature_names']
-df.head()
-
-df['PRICE']= boston['target']
-df.head()
-
-df.info()
-
-plt.figure(figsize=(10, 8))
-sns.distplot(df['PRICE'], rug=True)
-plt.show()
-
-#FILTER METHODS
-X=df.drop("PRICE",1)
-y=df["PRICE"]
-
-from sklearn.feature_selection import SelectKBest, chi2
-X, y = load_boston(return_X_y=True)
-X.shape
-
-#1.VARIANCE THRESHOLD
-from sklearn.feature_selection import VarianceThreshold
-selector = VarianceThreshold()
-selector.fit_transform(X)
-
-#2.INFORMATION GAIN/MUTUAL INFORMATION
-from sklearn.feature_selection import mutual_info_regression
-mi = mutual_info_regression(X, y);
-mi = pd.Series(mi)
-mi.sort_values(ascending=False)
-mi.sort_values(ascending=False).plot.bar(figsize=(10, 4))
-
-#3.SELECTKBEST METHOD
-from sklearn.feature_selection import f_classif
-from sklearn.feature_selection import SelectKBest,SelectPercentile
-skb = SelectKBest(score_func=f_classif, k=2) 
-X_data_new = skb.fit_transform(X, y)
-print('Number of features before feature selection: {}'.format(X.shape[1]))
-print('Number of features after feature selection: {}'.format(X_data_new.shape[1]))
-
-#4.CORRELATION COEFFICIENT
-cor=df.corr()
-sns.heatmap(cor,annot=True)
-
-#5.MEAN ABSOLUTE DIFFERENCE
-mad=np.sum(np.abs(X-np.mean(X,axis=0)),axis=0)/X.shape[0]
-plt.bar(np.arange(X.shape[1]),mad,color='teal')
-
-#Processing data into array type.
-from sklearn import preprocessing
-lab = preprocessing.LabelEncoder()
-y_transformed = lab.fit_transform(y)
-print(y_transformed)
-
-#6.CHI SQUARE TEST
-X = X.astype(int)
-chi2_selector = SelectKBest(chi2, k=2)
-X_kbest = chi2_selector.fit_transform(X, y_transformed)
-print('Original number of features:', X.shape[1])
-print('Reduced number of features:', X_kbest.shape[1])
-
-#7.SELECT PERCENTILE METHOD
-X_new = SelectPercentile(chi2, percentile=10).fit_transform(X, y_transformed)
-X_new.shape
-
-#WRAPPER METHOD
-#1.FORWARD FEATURE SELECTION
-
-from mlxtend.feature_selection import SequentialFeatureSelector as SFS
-from sklearn.linear_model import LinearRegression
-sfs = SFS(LinearRegression(),
-          k_features=10,
-          forward=True,
-          floating=False,
-          scoring = 'r2',
-          cv = 0)
-sfs.fit(X, y)
-sfs.k_feature_names_
-
-#2.BACKWARD FEATURE ELIMINATION
-
-sbs = SFS(LinearRegression(),
-         k_features=10,
-         forward=False,
-         floating=False,
-         cv=0)
-sbs.fit(X, y)
-sbs.k_feature_names_
-
-#3.BI-DIRECTIONAL ELIMINATION
-
-sffs = SFS(LinearRegression(),
-         k_features=(3,7),
-         forward=True,
-         floating=True,
-         cv=0)
-sffs.fit(X, y)
-sffs.k_feature_names_
-
-#4.RECURSIVE FEATURE SELECTION
-from sklearn.feature_selection import RFE
-lr=LinearRegression()
-rfe=RFE(lr,n_features_to_select=7)
-rfe.fit(X, y)
-print(X.shape, y.shape)
-rfe.transform(X)
-rfe.get_params(deep=True)
-rfe.support_
-rfe.ranking_
-
-#EMBEDDED METHOD
-
-#1.RANDOM FOREST IMPORTANCE
-from sklearn.ensemble import RandomForestClassifier
-model = RandomForestClassifier().fit(X,y_transformed)
-importances=model.feature_importances_
-
-final_df=pd.DataFrame({"Features":pd.DataFrame(X).columns,"Importances":importances})
-final_df.set_index("Importances")
-final_df=final_df.sort_values("Importances")
-final_df.plot.bar(color="teal")
 ```
-## OUTPUT:
+# OUTPUT FOR CARPRICE
 
-![1](https://user-images.githubusercontent.com/118707079/234245250-16638c13-3c9f-4d64-9d5e-c555649a258f.png)
+![GITHUB](d7.5.PNG)
 
-## Analyzing the boston dataset:
+![GITHUB](d7.6.PNG)
 
-![2](https://user-images.githubusercontent.com/118707079/234245460-3e362d40-ddbd-4057-871a-7111998784f7.png)
-
-![3](https://user-images.githubusercontent.com/118707079/234245680-a57e8f1c-f06a-404a-aa91-a94f4f607138.png)
-
-![4](https://user-images.githubusercontent.com/118707079/234245806-30af5d8e-3e4b-4ce2-96c7-df7c88d2f02f.png)
-
-## Analyzing dataset using Distplot:
-
-![5 1](https://user-images.githubusercontent.com/118707079/234246634-aa912e56-890c-47ed-b530-ba31d73eac17.png)
-![5 2](https://user-images.githubusercontent.com/118707079/234246633-e071212d-530e-4bd7-ad8e-fe1a623dc275.png)
-
-## Filter Methods:
-Variance Threshold:
-
-![6](https://user-images.githubusercontent.com/118707079/234246827-e194e7cd-b431-4e6f-b901-4d6d210c0f2a.png)
-
-## Information Gain:
-
-![7](https://user-images.githubusercontent.com/118707079/234247277-aa1603d4-7cc1-4de1-88e3-8cdc87bbfedc.png)
-
-## SelectKBest Model:
-
-![8](https://user-images.githubusercontent.com/118707079/234247499-adb36414-dc08-4960-86b9-c827a0b70971.png)
-
-## Correlation Coefficient:
-
-![9](https://user-images.githubusercontent.com/118707079/234247618-fe85c7e0-1726-4746-8417-56069c43da5c.png)
-
-## Mean Absolute difference:
-
-![10](https://user-images.githubusercontent.com/118707079/234247897-b32f9bd3-d1db-4e49-83e1-75e30a7af287.png)
-
-## Chi Square Test:
-
-![11](https://user-images.githubusercontent.com/118707079/234248021-923c053c-561b-4767-a77f-c6edb008cae2.png)
-![12](https://user-images.githubusercontent.com/118707079/234248255-7f1e81a4-c4ac-435c-8b15-6264918ecbce.png)
-
-## SelectPercentile Method:
-
-![13](https://user-images.githubusercontent.com/118707079/234248408-a32511e0-e807-4b4e-a062-65de74162c66.png)
-
-## Wrapper Methods:
-Forward Feature Selection:
-
-![14](https://user-images.githubusercontent.com/118707079/234249756-9d1ad92d-a34e-487d-9345-47f6498139b9.png)
-
-Backward Feature Selection:
-
-![15](https://user-images.githubusercontent.com/118707079/234249890-32f4a579-e6a8-484c-a57b-47bba97eb891.png)
-
-## Bi-Directional Elimination:
-
-![16](https://user-images.githubusercontent.com/118707079/234250023-3f831d59-d840-4942-a673-1aceee5227cf.png)
-
-## Recursive Feature Selection:
-
-![17](https://user-images.githubusercontent.com/118707079/234250134-628cc4ab-bcd2-45ae-b204-7581fbcfbdc6.png)
-
-## Embedded Methods:
-Random Forest Importance:
-
-![18](https://user-images.githubusercontent.com/118707079/234250409-0b18ba51-d309-4740-b241-db907efd72c2.png)
+![GITHUB](d7.8.PNG)
 
 ## RESULT:
-
-Hence various feature selection techniques are applied to the given data set successfully and saved the data into a file.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+Thus, the various feature selection techniques have been performed on a given dataset successfully.

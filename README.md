@@ -21,8 +21,8 @@ Save the data to the file
 ## CODE-Done for "titanic_dataset.csv"
 ```
 
-Developed By: Ashika Jubi R
-Reg.No: 212221040020
+Developed By: Raghul.M
+Reg.No: 212220220031
 
 # PROGRAM FOR TITANIC
 
